@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"flag"
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -62,27 +61,11 @@ func newDbMap(driver, dsn string, dialect modl.Dialect) (*modl.DbMap, error) {
 	return dbmap, nil
 }
 
-func write(tx *modl.Transaction, videoID string, now time.Time) error {
-	var l Log
-	err := tx.Get(&l, videoID, now)
-	if err != sql.ErrNoRows {
-		if err == nil {
-			return fmt.Errorf("%s %v record already exists", videoID, now)
-		} else {
-			return err
-		}
-	}
-
+func write(tx *modl.Transaction, videoID string) error {
 	vi, err := GetNicoVideoInfo(videoID)
 	if err != nil {
 		return err
 	}
-
-	l.VideoID = videoID
-	l.At = now
-	l.View = int32(vi.ViewCounter)
-	l.Comment = int32(vi.CommentNum)
-	l.Mylist = int32(vi.MylistCounter)
 
 	var v Video
 	err = tx.Get(&v, videoID)
@@ -103,7 +86,15 @@ func write(tx *modl.Transaction, videoID string, now time.Time) error {
 		return err
 	}
 
-	l.TagsDiff = strings.Join(diffTags(ots.StringSet(), nts.StringSet()), "\n")
+	l := Log{
+		VideoID:  videoID,
+		At:       time.Now(),
+		View:     int32(vi.ViewCounter),
+		Comment:  int32(vi.CommentNum),
+		Mylist:   int32(vi.MylistCounter),
+		TagsDiff: strings.Join(diffTags(ots.StringSet(), nts.StringSet()), "\n"),
+	}
+
 	err = tx.Insert(&l)
 	if err != nil {
 		return err
@@ -128,7 +119,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	now := time.Now()
 	for _, item := range ml.Item {
 		time.Sleep(3e9)
 
@@ -138,7 +128,7 @@ func main() {
 			continue
 		}
 
-		err = write(tx, item.ExtractVideoID(), now)
+		err = write(tx, item.ExtractVideoID())
 		if err != nil {
 			log.Println(err)
 			err = tx.Rollback()
