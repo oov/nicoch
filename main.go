@@ -61,21 +61,16 @@ func newDbMap(driver, dsn string, dialect modl.Dialect) (*modl.DbMap, error) {
 	return dbmap, nil
 }
 
-func write(tx *modl.Transaction, videoID string) error {
-	vi, err := GetNicoVideoInfo(videoID)
-	if err != nil {
-		return err
-	}
-
+func write(tx *modl.Transaction, vi *NicoVideoInfo) error {
 	var v Video
-	err = tx.Get(&v, videoID)
+	err := tx.Get(&v, vi.VideoID)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 
 	ots := NewNicoVideoInfoTagSlice(v.Tags)
 	nts := vi.TagsByDomain("jp")
-	v.ID = videoID
+	v.ID = vi.VideoID
 	v.Tags = nts.String()
 	if err == nil {
 		_, err = tx.Update(&v)
@@ -87,7 +82,7 @@ func write(tx *modl.Transaction, videoID string) error {
 	}
 
 	l := Log{
-		VideoID:  videoID,
+		VideoID:  vi.VideoID,
 		At:       time.Now(),
 		View:     int32(vi.ViewCounter),
 		Comment:  int32(vi.CommentNum),
@@ -121,13 +116,19 @@ func main() {
 	for _, item := range ml.Item {
 		time.Sleep(3e9)
 
+		vi, err := GetNicoVideoInfo(item.ExtractVideoID())
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
 		tx, err := dbmap.Begin()
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
-		err = write(tx, item.ExtractVideoID())
+		err = write(tx, vi)
 		if err != nil {
 			log.Println(err)
 			err = tx.Rollback()
