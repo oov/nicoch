@@ -104,8 +104,8 @@ func write(tx *modl.Transaction, videoID string) error {
 }
 
 func main() {
-	var dbFile = flag.String("db", "nicoch.sqlite3", "database filename")
-	var mylistID = flag.Int64("id", 0, "nicovideo mylist id")
+	dbFile := flag.String("db", "nicoch.sqlite3", "database filename")
+	mylistID := flag.Int64("id", 0, "nicovideo mylist id")
 
 	flag.Parse()
 	dbmap, err := newDbMap("sqlite3", *dbFile, modl.SqliteDialect{})
@@ -113,7 +113,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	flag.Parse()
 	ml, err := GetNicoVideoMylist(*mylistID)
 	if err != nil {
 		log.Fatal(err)
