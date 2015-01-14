@@ -7,23 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/oov/nicoch/db"
+
 	"github.com/jmoiron/modl"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-type Video struct {
-	ID   string
-	Tags string
-}
-
-type Log struct {
-	VideoID  string
-	At       time.Time
-	View     int32
-	Comment  int32
-	Mylist   int32
-	TagsDiff string
-}
 
 func diffTags(oldSet, newSet map[string]struct{}) []string {
 	r := make([]string, 0)
@@ -40,29 +28,8 @@ func diffTags(oldSet, newSet map[string]struct{}) []string {
 	return r
 }
 
-func newDbMap(driver, dsn string, dialect modl.Dialect) (*modl.DbMap, error) {
-	db, err := sql.Open(driver, dsn)
-	if err != nil {
-		return nil, err
-	}
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	dbmap := modl.NewDbMap(db, dialect)
-	dbmap.AddTable(Video{}).SetKeys(false, "id")
-	dbmap.AddTable(Log{}).SetKeys(false, "videoid", "at")
-
-	err = dbmap.CreateTablesIfNotExists()
-	if err != nil {
-		return nil, err
-	}
-	return dbmap, nil
-}
-
 func write(tx *modl.Transaction, vi *NicoVideoInfo) error {
-	var v Video
+	var v db.Video
 	err := tx.Get(&v, vi.VideoID)
 	if err != nil && err != sql.ErrNoRows {
 		return err
@@ -81,7 +48,7 @@ func write(tx *modl.Transaction, vi *NicoVideoInfo) error {
 		return err
 	}
 
-	l := Log{
+	l := db.Log{
 		VideoID:  vi.VideoID,
 		At:       time.Now(),
 		View:     int32(vi.ViewCounter),
@@ -103,7 +70,7 @@ func main() {
 	mylistID := flag.Int64("id", 0, "nicovideo mylist id")
 
 	flag.Parse()
-	dbmap, err := newDbMap("sqlite3", *dbFile, modl.SqliteDialect{})
+	dbmap, err := db.New("sqlite3", *dbFile, modl.SqliteDialect{})
 	if err != nil {
 		log.Fatal(err)
 	}
