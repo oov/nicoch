@@ -80,7 +80,7 @@ func write(x modl.SqlExecutor, vi *NicoVideoInfo) error {
 }
 
 func main() {
-	dbFile := flag.String("db", "newnicoch.sqlite3", "database filename")
+	dbFile := flag.String("db", "nicoch.sqlite3", "database filename")
 	mylistID := flag.Int64("id", 0, "nicovideo mylist id")
 
 	flag.Parse()
