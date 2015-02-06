@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/oov/nicoch/db2"
+	"github.com/oov/nicoch/db"
 
 	"github.com/jmoiron/modl"
 	_ "github.com/mattn/go-sqlite3"
@@ -27,8 +27,8 @@ func diffTags(oldSet, newSet map[string]struct{}) (added, removed []string) {
 	return
 }
 
-func getVideo(x modl.SqlExecutor, vi *NicoVideoInfo) (db2.Video, error) {
-	v, err := db2.GetVideoByCode(x, vi.VideoID)
+func getVideo(x modl.SqlExecutor, vi *NicoVideoInfo) (db.Video, error) {
+	v, err := db.GetVideoByCode(x, vi.VideoID)
 	switch {
 	case err == nil:
 		v.Code = vi.VideoID
@@ -64,7 +64,7 @@ func write(x modl.SqlExecutor, vi *NicoVideoInfo) error {
 		return err
 	}
 
-	l := db2.Log{
+	l := db.Log{
 		VideoID: v.ID,
 		At:      time.Now(),
 		View:    vi.ViewCounter,
@@ -85,7 +85,7 @@ func main() {
 	mylistID := flag.Int64("id", 0, "nicovideo mylist id")
 
 	flag.Parse()
-	dbmap, err := db2.New("sqlite3", *dbFile, modl.SqliteDialect{})
+	dbmap, err := db.New("sqlite3", *dbFile, modl.SqliteDialect{})
 	if err != nil {
 		log.Fatal(err)
 	}
