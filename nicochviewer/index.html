@@ -2,10 +2,36 @@
 <html lang="ja">
 <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
 <title>Nicoch Viewer</title>
+<script>
+function sort(via, reverse) {
+  var i, items = [],
+      e = document.querySelectorAll('a[data-videoid]'),
+      videos = document.querySelector('.ch-videos');
+  for (i = 0; i < e.length; ++i) {
+    items.push(e[i]);
+  }
+  items.sort(function(a, b){
+      var av = +a.getAttribute('data-'+via), bv = +b.getAttribute('data-'+via);
+      return (av == bv ? 0 : av > bv ? 1 : -1)*(reverse ? -1 : 1);
+  });
+  for (i = 0; i < items.length; ++i) {
+    videos.appendChild(items[i]);
+  }
+}
+</script>
 <div class="container">
   <h1>Nicoch Viewer</h1>
   <p>カッコ内の数値は１週間前の値からの変化量（ポイントのみ成長率）</p>
-  <div class="list-group">
+
+<div class="btn-group" role="group">
+  <button type="button" class="btn btn-default" onclick="sort('view', true)">再生数順</button>
+  <button type="button" class="btn btn-default" onclick="sort('comment', true)">コメント順</button>
+  <button type="button" class="btn btn-default" onclick="sort('mylist', true)">マイリスト順</button>
+  <button type="button" class="btn btn-default" onclick="sort('point', true)">ポイント順</button>
+  <button type="button" class="btn btn-default" onclick="sort('growth', true)">成長率順</button>
+</div>
+
+  <div class="ch-videos list-group">
     {{$stats := .Stats}}
     {{range .Videos}}
       {{$stat := index $stats .ID}}
