@@ -1,2 +1,6 @@
 nicoch
 nicoch.sqlite3
+newnicoch.sqlite3
+migrate/migrate
+Procfile
+.env

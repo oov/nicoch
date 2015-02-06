@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+type Tag interface {
+	TagName() string
+}
+
 type NicoVideoInfo struct {
 	VideoID       string    `xml:"thumb>video_id"`
 	Title         string    `xml:"thumb>title"`
@@ -56,16 +60,12 @@ func (ts NicoVideoInfoTagSlice) String() string {
 	return strings.Join(ts.StringSlice(), "\n")
 }
 
-func NewNicoVideoInfoTagSlice(s string) NicoVideoInfoTagSlice {
-	ss := strings.Split(strings.TrimSpace(s), "\n")
-	if len(ss) == 1 && ss[0] == "" {
-		return make(NicoVideoInfoTagSlice, 0)
-	}
-	sort.Strings(ss)
-	tags := make(NicoVideoInfoTagSlice, len(ss))
-	for i, v := range ss {
+func NewNicoVideoInfoTagSlice(t []string) NicoVideoInfoTagSlice {
+	tags := make(NicoVideoInfoTagSlice, len(t))
+	for i, v := range t {
 		tags[i].Value = v
 	}
+	sort.Sort(tags)
 	return tags
 }
 
