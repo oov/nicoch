@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"flag"
 	"log"
-	"os"
 	"time"
 
 	"github.com/oov/nicoch/db"
@@ -89,7 +88,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dbmap.TraceOn("", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
 
 	ml, err := GetNicoVideoMylist(*mylistID)
 	if err != nil {
