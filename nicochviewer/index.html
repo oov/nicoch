@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
+<title>Nicoch Viewer</title>
+<div class="container">
+  <h1>Nicoch Viewer</h1>
+  <p>カッコ内の数値は１週間前の値からの変化量（ポイントのみ成長率）</p>
+  <div class="list-group">
+    {{$stats := .Stats}}
+    {{range .Videos}}
+      {{$stat := index $stats .ID}}
+      <a
+        href="/{{.Code}}/"
+        class="list-group-item"
+        data-videoid="{{.ID}}"
+        data-view="{{$stat.LatestLog.View}}"
+        data-comment="{{$stat.LatestLog.Comment}}"
+        data-mylist="{{$stat.LatestLog.Mylist}}"
+        data-point="{{$stat.LatestLog.Point}}"
+        data-view-aweekago="{{$stat.AWeekAgo.View}}"
+        data-comment-aweekago="{{$stat.AWeekAgo.Comment}}"
+        data-mylist-aweekago="{{$stat.AWeekAgo.Mylist}}"
+        data-point-aweekago="{{$stat.AWeekAgo.Point}}"
+        data-growth="{{$stat.Growth}}">
+        <h4 class="list-group-item-heading">{{.Name}}</h4>
+        <p class="list-group-item-text">
+        <small class="text-muted">View</small> {{$stat.LatestLog.View}}{{if $stat.ViewDiff}}<small class="text-muted">({{printf "%+d" ($stat.ViewDiff)}})</small>{{end}} &middot;
+          <small class="text-muted">Comment</small> {{$stat.LatestLog.Comment}}{{if $stat.CommentDiff}}<small class="text-muted">({{printf "%+d" ($stat.CommentDiff)}})</small>{{end}} &middot;
+          <small class="text-muted">Mylist</small> {{$stat.LatestLog.Mylist}}{{if $stat.MylistDiff}}<small class="text-muted">({{printf "%+d" ($stat.MylistDiff)}})</small>{{end}} &middot;
+          <small class="text-muted">Point</small> {{printf "%0.0f" $stat.LatestLog.Point}}<small class="text-muted">({{printf "%+0.3f%%" $stat.Growth}})</small>
+        </p>
+      </a>
+    {{end}}
+  </div>
+</div>
+</html>

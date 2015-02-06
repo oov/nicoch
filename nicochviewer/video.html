@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
+<title>{{.Video.Code}} - Nicoch Viewer</title>
+<div class="container">
+  <h1>{{.Video.Code}} - Nicoch Viewer</h1>
+  
+  <p>Title: <a href="http://www.nicovideo.jp/watch/{{.Video.Code}}" target="_blank">{{.Video.Name}}</a></p>
+  
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>View</th>
+        <th>Comment</th>
+        <th>Mylist</th>
+      </tr>
+    </thead>
+    <tbody>
+  {{range .Logs}}
+    <tr>
+      {{if .}}
+      <td>{{.At}}</td>
+      <td>{{.View}}</td>
+      <td>{{.Comment}}</td>
+      <td>{{.Mylist}}</td>
+      {{else}}
+      <td>--</td>
+      <td>--</td>
+      <td>--</td>
+      <td>--</td>
+      {{end}}
+    </tr>
+  {{end}}
+    </tbody>
+  </table>
+</div>
+</html>

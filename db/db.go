@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"math"
 	"time"
 
 	"github.com/jmoiron/modl"
@@ -119,6 +120,13 @@ func (v *Video) UpdateTags(x modl.SqlExecutor, tags []string) error {
 		}
 	}
 	return nil
+}
+
+func (l *Log) Point() float64 {
+	v, c, m := float64(l.View), float64(l.Comment), float64(l.Mylist)
+	corrA := (v + m) / (v + c + m)
+	corrB := math.Min((m/(v*100))*2, 40)
+	return v + c*corrA + m*corrB
 }
 
 func (l *Log) RemoveAllTags(x modl.SqlExecutor) error {
