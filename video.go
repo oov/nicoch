@@ -18,6 +18,7 @@ type NicoVideoInfo struct {
 	VideoID       string    `xml:"thumb>video_id"`
 	Title         string    `xml:"thumb>title"`
 	Description   string    `xml:"thumb>description"`
+	Thumbnail     string    `xml:"thumb>thumbnail_url"`
 	FirstRetrieve time.Time `xml:"thumb>first_retrieve"`
 	Length        string    `xml:"thumb>length"`
 	MovieType     string    `xml:"thumb>movie_type"`

@@ -28,21 +28,20 @@ func diffTags(oldSet, newSet map[string]struct{}) (added, removed []string) {
 
 func getVideo(x modl.SqlExecutor, vi *NicoVideoInfo) (db.Video, error) {
 	v, err := db.GetVideoByCode(x, vi.VideoID)
-	switch {
-	case err == nil:
-		v.Code = vi.VideoID
-		v.Name = vi.Title
-		_, err = x.Update(&v)
-		return v, err
-	case err != sql.ErrNoRows:
-		return v, err
-	case err == sql.ErrNoRows:
-		v.Code = vi.VideoID
-		v.Name = vi.Title
-		err = x.Insert(&v)
+	if err != nil && err != sql.ErrNoRows {
 		return v, err
 	}
-	panic("unreachable")
+
+	v.Code = vi.VideoID
+	v.Name = vi.Title
+	v.PostedAt = vi.FirstRetrieve
+	v.Thumb = vi.Thumbnail
+	if err == sql.ErrNoRows {
+		err = x.Insert(&v)
+	} else {
+		_, err = x.Update(&v)
+	}
+	return v, err
 }
 
 func write(x modl.SqlExecutor, vi *NicoVideoInfo) error {
