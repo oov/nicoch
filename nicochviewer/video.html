@@ -3,10 +3,24 @@
 <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
 <title>{{.Video.Code}} - Nicoch Viewer</title>
 <div class="container">
-  <h1>{{.Video.Code}} - Nicoch Viewer</h1>
+  <h1>Nicoch Viewer</h1>
   
-  <p>Title: <a href="http://www.nicovideo.jp/watch/{{.Video.Code}}" target="_blank">{{.Video.Name}}</a></p>
+  <div class="media">
+    <div class="media-left">
+      <a href="http://www.nicovideo.jp/watch/{{.Video.Code}}" target="_blank">
+        <img src="{{.Video.Thumb}}" alt="thumbnail" class="media-object">
+      </a>
+    </div>
+    <div class="media-body">
+      <h4 class="media-heading">
+        <a href="http://www.nicovideo.jp/watch/{{.Video.Code}}" target="_blank">
+          {{.Video.Name}}
+        </a>
+      </h4>
+    </div>
+  </div>
   
+  <div id="graph"></div>
   <table class="table">
     <thead>
       <tr>
@@ -18,9 +32,23 @@
     </thead>
     <tbody>
   {{range .Logs}}
-    <tr>
+    <tr
       {{if .}}
-      <td>{{.At}}</td>
+      data-at="{{.At.Unix}}"
+      data-view="{{.View}}"
+      data-comment="{{.Comment}}"
+      data-mylist="{{.Mylist}}"
+      data-point="{{.Point}}"
+      {{else}}
+      data-at="0"
+      data-view="0"
+      data-comment="0"
+      data-mylist="0"
+      data-point="0"
+      {{end}}
+      >
+      {{if .}}
+      <td>{{.At.Format "2006-01-02 03:04"}}</td>
       <td>{{.View}}</td>
       <td>{{.Comment}}</td>
       <td>{{.Mylist}}</td>
