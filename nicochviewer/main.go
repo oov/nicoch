@@ -165,7 +165,9 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			s.ViewDiff = s.LatestLog.View - s.AWeekAgo.View
 			s.CommentDiff = s.LatestLog.Comment - s.AWeekAgo.Comment
 			s.MylistDiff = s.LatestLog.Mylist - s.AWeekAgo.Mylist
-			s.Growth = 100.0 * (s.LatestLog.Point()/s.AWeekAgo.Point() - 1)
+			if s.AWeekAgo.View != 0 {
+				s.Growth = 100.0 * (s.LatestLog.Point()/s.AWeekAgo.Point() - 1)
+			}
 		}
 	}
 

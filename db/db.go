@@ -125,6 +125,10 @@ func (v *Video) UpdateTags(x modl.SqlExecutor, tags []string) error {
 }
 
 func (l *Log) Point() float64 {
+	if l.View == 0 {
+		return 0
+	}
+
 	v, c, m := float64(l.View), float64(l.Comment), float64(l.Mylist)
 	corrA := (v + m) / (v + c + m)
 	corrB := math.Min((m/(v*100))*2, 40)
