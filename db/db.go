@@ -9,11 +9,12 @@ import (
 )
 
 type Video struct {
-	ID       int64
-	Code     string
-	Name     string
-	PostedAt time.Time
-	Thumb    string
+	ID        int64
+	Code      string
+	Name      string
+	PostedAt  time.Time
+	TweetedAt time.Time
+	Thumb     string
 }
 
 type Log struct {

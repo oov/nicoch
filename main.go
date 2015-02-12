@@ -26,7 +26,7 @@ func diffTags(oldSet, newSet map[string]struct{}) (added, removed []string) {
 	return
 }
 
-func getVideo(x modl.SqlExecutor, vi *NicoVideoInfo) (db.Video, error) {
+func getAndUpdateVideo(x modl.SqlExecutor, vi *NicoVideoInfo, tweetedAt time.Time) (db.Video, error) {
 	v, err := db.GetVideoByCode(x, vi.VideoID)
 	if err != nil && err != sql.ErrNoRows {
 		return v, err
@@ -35,6 +35,9 @@ func getVideo(x modl.SqlExecutor, vi *NicoVideoInfo) (db.Video, error) {
 	v.Code = vi.VideoID
 	v.Name = vi.Title
 	v.PostedAt = vi.FirstRetrieve
+	if tweetedAt.After(v.TweetedAt) {
+		v.TweetedAt = tweetedAt
+	}
 	v.Thumb = vi.Thumbnail
 	if err == sql.ErrNoRows {
 		err = x.Insert(&v)
@@ -44,8 +47,8 @@ func getVideo(x modl.SqlExecutor, vi *NicoVideoInfo) (db.Video, error) {
 	return v, err
 }
 
-func write(x modl.SqlExecutor, vi *NicoVideoInfo) error {
-	v, err := getVideo(x, vi)
+func write(x modl.SqlExecutor, vi *NicoVideoInfo, tweetedAt time.Time) error {
+	v, err := getAndUpdateVideo(x, vi, tweetedAt)
 	if err != nil {
 		return err
 	}
@@ -81,7 +84,10 @@ func write(x modl.SqlExecutor, vi *NicoVideoInfo) error {
 func main() {
 	dbFile := flag.String("db", "nicoch.sqlite3", "database filename")
 	mylistID := flag.Int64("id", 0, "nicovideo mylist id")
-
+	twitterConsumerKey := flag.String("consumer-key", "", "Twiter Application Consumer Key")
+	twitterConsumerSecret := flag.String("consumer-secret", "", "Twiter Application Consumer Secret")
+	twitterOAuthToken := flag.String("token", "", "Twiter OAuth Token")
+	twitterOAuthSecret := flag.String("secret", "", "Twiter OAuth Secret")
 	flag.Parse()
 	dbmap, err := db.New("sqlite3", *dbFile, modl.SqliteDialect{})
 	if err != nil {
@@ -102,13 +108,23 @@ func main() {
 			continue
 		}
 
+		tweetedAt, err := SearchLatestTweet(
+			vi.VideoID,
+			*twitterConsumerKey, *twitterConsumerSecret,
+			*twitterOAuthToken, *twitterOAuthSecret,
+		)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
 		tx, err := dbmap.Begin()
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
-		err = write(tx, vi)
+		err = write(tx, vi, tweetedAt)
 		if err != nil {
 			log.Println(err)
 			err = tx.Rollback()

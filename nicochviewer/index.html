@@ -5,7 +5,7 @@
 <script>
 function sort(via, reverse) {
   var i, items = [],
-      e = document.querySelectorAll('a[data-videoid]'),
+      e = document.querySelectorAll('li[data-videoid]'),
       videos = document.querySelector('.ch-videos');
   for (i = 0; i < e.length; ++i) {
     items.push(e[i]);
@@ -31,6 +31,9 @@ document.addEventListener("DOMContentLoaded", function(){
       <button type="button" class="btn btn-default btn-sm" onclick="sort('posted-at', true)">投稿日時順</button>
     </div>
     <div class="btn-group" role="group">
+      <button type="button" class="btn btn-default btn-sm" onclick="sort('tweeted-at', true)">ツイート日時順</button>
+    </div>
+    <div class="btn-group" role="group">
       <button type="button" class="btn btn-default btn-sm" onclick="sort('view', true)">再生数順</button>
       <button type="button" class="btn btn-default btn-sm" onclick="sort('view-diff', true)">再生数増加順</button>
     </div>
@@ -48,15 +51,15 @@ document.addEventListener("DOMContentLoaded", function(){
     </div>
   </div>
 
-  <div class="ch-videos list-group">
+  <ul class="ch-videos list-group">
     {{$stats := .Stats}}
     {{range .Videos}}
       {{$stat := index $stats .ID}}
-      <a
-        href="/{{.Code}}/"
+      <li
         class="list-group-item"
         data-videoid="{{.ID}}"
         data-posted-at="{{.PostedAt.Unix}}"
+        data-tweeted-at="{{.TweetedAt.Unix}}"
         data-view="{{$stat.LatestLog.View}}"
         data-comment="{{$stat.LatestLog.Comment}}"
         data-mylist="{{$stat.LatestLog.Mylist}}"
@@ -69,55 +72,27 @@ document.addEventListener("DOMContentLoaded", function(){
         data-comment-diff="{{$stat.CommentDiff}}"
         data-mylist-diff="{{$stat.MylistDiff}}"
         data-growth="{{$stat.Growth}}">
-<div class="media">
-  <div class="media-left">
-    <img class="media-object" src="{{.Thumb}}" alt="thumbnail" width="56">
-  </div>
-  <div class="media-body">
-    <h4 class="media-heading">{{.Name}}</h4>
-          <small class="text-muted">Posted at </small> {{.PostedAt.Format "2006-01-02 03:04:05"}} &middot;
-          <small class="text-muted">View</small> {{$stat.LatestLog.View}}{{if $stat.ViewDiff}}<small class="text-muted">({{printf "%+d" ($stat.ViewDiff)}})</small>{{end}} &middot;
-          <small class="text-muted">Comment</small> {{$stat.LatestLog.Comment}}{{if $stat.CommentDiff}}<small class="text-muted">({{printf "%+d" ($stat.CommentDiff)}})</small>{{end}} &middot;
-          <small class="text-muted">Mylist</small> {{$stat.LatestLog.Mylist}}{{if $stat.MylistDiff}}<small class="text-muted">({{printf "%+d" ($stat.MylistDiff)}})</small>{{end}} &middot;
-          <small class="text-muted">Point</small> {{printf "%0.0f" $stat.LatestLog.Point}}<small class="text-muted">({{printf "%+0.3f%%" $stat.Growth}})</small>
-  </div>
-</div>
-      </a>
+        <div class="media">
+          <div class="media-left">
+            <a href="/{{.Code}}/">
+              <img class="media-object" src="{{.Thumb}}" alt="thumbnail" width="56">
+            </a>
+          </div>
+          <div class="media-body">
+            <h4 class="media-heading">
+              <a href="/{{.Code}}/">
+                {{.Name}}
+              </a>
+            </h4>
+            <small class="text-muted"><a href="https://twitter.com/search?f=realtime&q={{.Code}}" target="_blank">Tweeted at</a></small> {{if .TweetedAt.IsZero}}<span class="text-muted">0000-00-00 00:00</span>{{else}}{{.TweetedAt.Format "2006-01-02 15:04"}}{{end}} &middot;
+            <small class="text-muted">View</small> {{$stat.LatestLog.View}}{{if $stat.ViewDiff}}<small class="text-muted">({{printf "%+d" ($stat.ViewDiff)}})</small>{{end}} &middot;
+            <small class="text-muted">Comment</small> {{$stat.LatestLog.Comment}}{{if $stat.CommentDiff}}<small class="text-muted">({{printf "%+d" ($stat.CommentDiff)}})</small>{{end}} &middot;
+            <small class="text-muted">Mylist</small> {{$stat.LatestLog.Mylist}}{{if $stat.MylistDiff}}<small class="text-muted">({{printf "%+d" ($stat.MylistDiff)}})</small>{{end}} &middot;
+            <small class="text-muted">Point</small> {{printf "%0.0f" $stat.LatestLog.Point}}<small class="text-muted">({{printf "%+0.3f%%" $stat.Growth}})</small>
+          </div>
+        </div>
+      </li>
     {{end}}
-  </div>
-<!--
-  <div class="ch-videos list-group">
-    {{$stats := .Stats}}
-    {{range .Videos}}
-      {{$stat := index $stats .ID}}
-      <a
-        href="/{{.Code}}/"
-        class="list-group-item"
-        data-videoid="{{.ID}}"
-        data-posted-at="{{.PostedAt.Unix}}"
-        data-view="{{$stat.LatestLog.View}}"
-        data-comment="{{$stat.LatestLog.Comment}}"
-        data-mylist="{{$stat.LatestLog.Mylist}}"
-        data-point="{{$stat.LatestLog.Point}}"
-        data-view-aweekago="{{$stat.AWeekAgo.View}}"
-        data-comment-aweekago="{{$stat.AWeekAgo.Comment}}"
-        data-mylist-aweekago="{{$stat.AWeekAgo.Mylist}}"
-        data-point-aweekago="{{$stat.AWeekAgo.Point}}"
-        data-view-diff="{{$stat.ViewDiff}}"
-        data-comment-diff="{{$stat.CommentDiff}}"
-        data-mylist-diff="{{$stat.MylistDiff}}"
-        data-growth="{{$stat.Growth}}">
-        <h4 class="list-group-item-heading">{{.Name}}</h4>
-        <p class="list-group-item-text">
-          <small class="text-muted">Posted at </small> {{.PostedAt.Format "2006-01-02 03:04:05"}} &middot;
-          <small class="text-muted">View</small> {{$stat.LatestLog.View}}{{if $stat.ViewDiff}}<small class="text-muted">({{printf "%+d" ($stat.ViewDiff)}})</small>{{end}} &middot;
-          <small class="text-muted">Comment</small> {{$stat.LatestLog.Comment}}{{if $stat.CommentDiff}}<small class="text-muted">({{printf "%+d" ($stat.CommentDiff)}})</small>{{end}} &middot;
-          <small class="text-muted">Mylist</small> {{$stat.LatestLog.Mylist}}{{if $stat.MylistDiff}}<small class="text-muted">({{printf "%+d" ($stat.MylistDiff)}})</small>{{end}} &middot;
-          <small class="text-muted">Point</small> {{printf "%0.0f" $stat.LatestLog.Point}}<small class="text-muted">({{printf "%+0.3f%%" $stat.Growth}})</small>
-        </p>
-      </a>
-    {{end}}
-  </div>
--->
+  </ul>
 </div>
 </html>
