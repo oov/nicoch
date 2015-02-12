@@ -96,6 +96,9 @@ func getNicoVideoInfoFromReader(r io.Reader) (*NicoVideoInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	if vi.VideoID == "" {
+		return nil, fmt.Errorf("broken xml")
+	}
 
 	for _, v := range vi.Tags {
 		sort.Sort(v.Tag)
