@@ -90,6 +90,7 @@ func Video(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer dbm.Dbx.Close()
 
 	var vars struct {
 		Video db.Video
@@ -120,6 +121,7 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer dbm.Dbx.Close()
 
 	type Stat struct {
 		LatestLog   *db.Log

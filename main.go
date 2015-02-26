@@ -94,6 +94,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	defer dbmap.Dbx.Close()
+
 	ml, err := GetNicoVideoMylist(*mylistID)
 	if err != nil {
 		log.Fatal(err)
