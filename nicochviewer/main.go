@@ -18,8 +18,19 @@ var tpl = template.Must(template.New("").ParseGlob("*.html"))
 var port = flag.String("http", ":80", "http listen address")
 var dbFile = flag.String("db", "nicoch.sqlite3", "database filename")
 
-func newDb() (*modl.DbMap, error) {
-	return db.New("sqlite3", *dbFile, modl.SqliteDialect{})
+func useDB(h func(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, p httprouter.Params)) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		dbm, err := db.New("sqlite3", *dbFile, modl.SqliteDialect{})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		h(dbm, w, r, p)
+		err = dbm.Dbx.Close()
+		if err != nil {
+			log.Println("err:", err)
+		}
+	}
 }
 
 func addDateTime(t time.Time, years int, months int, days int, hours int, mins int, secs int, nsecs int) time.Time {
@@ -84,18 +95,12 @@ func LogDaily(x modl.SqlExecutor, videoID int64, o time.Time) ([]*db.Log, error)
 	return rLogs, nil
 }
 
-func Video(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	dbm, err := newDb()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer dbm.Dbx.Close()
-
+func Video(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	var vars struct {
 		Video db.Video
 		Logs  []*db.Log
 	}
+	var err error
 	vars.Video, err = db.GetVideoByCode(dbm, params.ByName("code"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -115,14 +120,7 @@ func Video(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	}
 }
 
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	dbm, err := newDb()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer dbm.Dbx.Close()
-
+func Index(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	type Stat struct {
 		LatestLog   *db.Log
 		AWeekAgo    *db.Log
@@ -135,7 +133,7 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		Videos []db.Video
 		Stats  map[int64]*Stat
 	}
-	err = dbm.Select(&vars.Videos, `SELECT * FROM video`)
+	err := dbm.Select(&vars.Videos, `SELECT * FROM video`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -184,8 +182,8 @@ func main() {
 	flag.Parse()
 
 	router := httprouter.New()
-	router.GET("/", Index)
-	router.GET("/:code", Video)
+	router.GET("/", useDB(Index))
+	router.GET("/:code", useDB(Video))
 
 	log.Fatal(http.ListenAndServe(*port, router))
 }
