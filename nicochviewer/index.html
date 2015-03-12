@@ -80,13 +80,13 @@ document.addEventListener("DOMContentLoaded", function(){
             </a>
           </div>
           <div class="media-body">
-            <small class="text-muted">{{.PostedAt.Format "2006-01-02 15:04"}} 投稿</small>
+            <small class="text-muted">{{.PostedAt.Format "2006-01-02 15:04"}} 投稿</small> &middot;
+            <small class="text-muted"><a href="https://twitter.com/search?f=realtime&q={{.Code}}" target="_blank">Tweeted at</a></small> {{if .TweetedAt.IsZero}}<span class="text-muted">0000-00-00 00:00</span>{{else}}{{.TweetedAt.Format "2006-01-02 15:04"}}{{end}}
             <h4 class="media-heading">
               <a href="/{{.Code}}/">
                 {{.Name}}
               </a>
             </h4>
-            <small class="text-muted"><a href="https://twitter.com/search?f=realtime&q={{.Code}}" target="_blank">Tweeted at</a></small> {{if .TweetedAt.IsZero}}<span class="text-muted">0000-00-00 00:00</span>{{else}}{{.TweetedAt.Format "2006-01-02 15:04"}}{{end}} &middot;
             <small class="text-muted">View</small> {{$stat.LatestLog.View}}{{if $stat.ViewDiff}}<small class="text-muted">({{printf "%+d" ($stat.ViewDiff)}})</small>{{end}} &middot;
             <small class="text-muted">Comment</small> {{$stat.LatestLog.Comment}}{{if $stat.CommentDiff}}<small class="text-muted">({{printf "%+d" ($stat.CommentDiff)}})</small>{{end}} &middot;
             <small class="text-muted">Mylist</small> {{$stat.LatestLog.Mylist}}{{if $stat.MylistDiff}}<small class="text-muted">({{printf "%+d" ($stat.MylistDiff)}})</small>{{end}} &middot;
