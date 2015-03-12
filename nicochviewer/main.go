@@ -7,30 +7,47 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/oov/nicoch/db"
-
 	"github.com/jmoiron/modl"
-	"github.com/julienschmidt/httprouter"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/zenazn/goji"
+	"github.com/zenazn/goji/web"
+	"github.com/zenazn/goji/web/middleware"
+
+	"github.com/oov/nicoch/db"
 )
 
 var tpl = template.Must(template.New("").ParseGlob("*.html"))
-var port = flag.String("http", ":80", "http listen address")
 var dbFile = flag.String("db", "nicoch.sqlite3", "database filename")
 
-func useDB(h func(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, p httprouter.Params)) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+type key int
+
+const dbKey key = 0
+
+func useDB(c *web.C, h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
 		dbm, err := db.New("sqlite3", *dbFile, modl.SqliteDialect{})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		h(dbm, w, r, p)
-		err = dbm.Dbx.Close()
-		if err != nil {
+		c.Env[dbKey] = dbm
+		h.ServeHTTP(w, r)
+		if err = dbm.Dbx.Close(); err != nil {
 			log.Println("err:", err)
 		}
 	}
+	return http.HandlerFunc(fn)
+}
+
+func getDB(c web.C) *modl.DbMap {
+	v, ok := c.Env[dbKey]
+	if !ok {
+		return nil
+	}
+	if dbm, ok := v.(*modl.DbMap); ok {
+		return dbm
+	}
+	return nil
 }
 
 func addDateTime(t time.Time, years int, months int, days int, hours int, mins int, secs int, nsecs int) time.Time {
@@ -95,19 +112,64 @@ func LogDaily(x modl.SqlExecutor, videoID int64, o time.Time) ([]*db.Log, error)
 	return rLogs, nil
 }
 
-func Video(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+type tag struct {
+	Name  string
+	Score int64
+}
+
+type tagM struct {
+	At   time.Time
+	Tags []tag
+}
+
+func tagMovement(x modl.SqlExecutor, videoID int64, o time.Time) ([]tagM, error) {
+	var tmp []struct {
+		ID    int64
+		At    time.Time
+		Name  string
+		Score int64
+	}
+	err := x.Select(&tmp, "SELECT log.id, log.at, tag.name, logtag.score FROM log INNER JOIN logtag ON logtag.logid = log.id INNER JOIN tag ON tag.id = logtag.tagid WHERE (log.videoid = ?)AND(datetime(?, '-1 years') <= log.at)AND(log.at < ?) ORDER BY log.at DESC", videoID, o, o)
+	if err != nil {
+		return nil, err
+	}
+
+	var tagMs []tagM
+	mp := map[int64]int{}
+	for _, v := range tmp {
+		idx, ok := mp[v.ID]
+		if !ok {
+			idx = len(tagMs)
+			mp[v.ID] = idx
+			tagMs = append(tagMs, tagM{At: v.At})
+		}
+		tagMs[idx].Tags = append(tagMs[idx].Tags, tag{Name: v.Name, Score: v.Score})
+	}
+	return tagMs, nil
+}
+
+func Video(c web.C, w http.ResponseWriter, r *http.Request) {
+	dbm := getDB(c)
 	var vars struct {
 		Video db.Video
 		Logs  []*db.Log
+		TagMs []tagM
 	}
 	var err error
-	vars.Video, err = db.GetVideoByCode(dbm, params.ByName("code"))
+	vars.Video, err = db.GetVideoByCode(dbm, c.URLParams["code"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	vars.Logs, err = LogDaily(dbm, vars.Video.ID, time.Now())
+	now := time.Now()
+	vars.Logs, err = LogDaily(dbm, vars.Video.ID, now)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	vars.TagMs, err = tagMovement(dbm, vars.Video.ID, now)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -120,7 +182,8 @@ func Video(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, params httpr
 	}
 }
 
-func Index(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func Index(c web.C, w http.ResponseWriter, r *http.Request) {
+	dbm := getDB(c)
 	type Stat struct {
 		LatestLog   *db.Log
 		AWeekAgo    *db.Log
@@ -180,10 +243,9 @@ func Index(dbm *modl.DbMap, w http.ResponseWriter, r *http.Request, params httpr
 
 func main() {
 	flag.Parse()
-
-	router := httprouter.New()
-	router.GET("/", useDB(Index))
-	router.GET("/:code", useDB(Video))
-
-	log.Fatal(http.ListenAndServe(*port, router))
+	goji.Use(middleware.EnvInit)
+	goji.Use(useDB)
+	goji.Get("/:code/", Video)
+	goji.Get("/", Index)
+	goji.Serve()
 }

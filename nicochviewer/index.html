@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet">
 <title>Nicoch Viewer</title>
 <script>
@@ -75,10 +76,11 @@ document.addEventListener("DOMContentLoaded", function(){
         <div class="media">
           <div class="media-left">
             <a href="/{{.Code}}/">
-              <img class="media-object" src="{{.Thumb}}" alt="thumbnail" width="56">
+              <img class="media-object" src="{{.Thumb}}" alt="thumbnail" width="80">
             </a>
           </div>
           <div class="media-body">
+            <small class="text-muted">{{.PostedAt.Format "2006-01-02 15:04"}} 投稿</small>
             <h4 class="media-heading">
               <a href="/{{.Code}}/">
                 {{.Name}}
