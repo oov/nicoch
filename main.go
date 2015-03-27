@@ -89,7 +89,7 @@ func main() {
 	twitterOAuthToken := flag.String("token", "", "Twiter OAuth Token")
 	twitterOAuthSecret := flag.String("secret", "", "Twiter OAuth Secret")
 	flag.Parse()
-	dbmap, err := db.New("sqlite3", *dbFile, modl.SqliteDialect{})
+	dbmap, err := db.New("sqlite3", "file:"+*dbFile+"?loc=auto", modl.SqliteDialect{})
 	if err != nil {
 		log.Fatal(err)
 	}

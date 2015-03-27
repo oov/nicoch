@@ -25,7 +25,7 @@ const dbKey key = 0
 
 func useDB(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		dbm, err := db.New("sqlite3", *dbFile, modl.SqliteDialect{})
+		dbm, err := db.New("sqlite3", "file:"+*dbFile+"?loc=auto", modl.SqliteDialect{})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
