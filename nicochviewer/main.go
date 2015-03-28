@@ -14,6 +14,7 @@ import (
 	"github.com/zenazn/goji/web/middleware"
 
 	"github.com/oov/nicoch/db"
+	"github.com/oov/nicoch/db/tag"
 )
 
 var tpl = template.Must(template.New("").ParseGlob("*.html"))
@@ -112,48 +113,12 @@ func LogDaily(x modl.SqlExecutor, videoID int64, o time.Time) ([]*db.Log, error)
 	return rLogs, nil
 }
 
-type tag struct {
-	Name  string
-	Score int64
-}
-
-type tagM struct {
-	At   time.Time
-	Tags []tag
-}
-
-func tagMovement(x modl.SqlExecutor, videoID int64, o time.Time) ([]tagM, error) {
-	var tmp []struct {
-		ID    int64
-		At    time.Time
-		Name  string
-		Score int64
-	}
-	err := x.Select(&tmp, "SELECT log.id, log.at, tag.name, logtag.score FROM log INNER JOIN logtag ON logtag.logid = log.id INNER JOIN tag ON tag.id = logtag.tagid WHERE (log.videoid = ?)AND(datetime(?, '-1 years') <= log.at)AND(log.at < ?) ORDER BY log.at DESC", videoID, o, o)
-	if err != nil {
-		return nil, err
-	}
-
-	var tagMs []tagM
-	mp := map[int64]int{}
-	for _, v := range tmp {
-		idx, ok := mp[v.ID]
-		if !ok {
-			idx = len(tagMs)
-			mp[v.ID] = idx
-			tagMs = append(tagMs, tagM{At: v.At})
-		}
-		tagMs[idx].Tags = append(tagMs[idx].Tags, tag{Name: v.Name, Score: v.Score})
-	}
-	return tagMs, nil
-}
-
 func Video(c web.C, w http.ResponseWriter, r *http.Request) {
 	dbm := getDB(c)
 	var vars struct {
-		Video db.Video
-		Logs  []*db.Log
-		TagMs []tagM
+		Video      db.Video
+		Logs       []*db.Log
+		TagChanges []tag.Change
 	}
 	var err error
 	vars.Video, err = db.GetVideoByCode(dbm, c.URLParams["code"])
@@ -169,7 +134,7 @@ func Video(c web.C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars.TagMs, err = tagMovement(dbm, vars.Video.ID, now)
+	vars.TagChanges, err = tag.ChangeLogs(dbm, vars.Video.ID, now.AddDate(-1, 0, 0), now)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

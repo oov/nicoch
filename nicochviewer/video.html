@@ -43,16 +43,24 @@
       </tr>
     </thead>
     <tbody>
-  {{range .TagMs}}
+  {{range .TagChanges}}
     <tr>
       <td>{{.At.Format "2006-01-02 15:04"}}</td>
       <td>
         <ul class="list-inline">
-        {{range .Tags}}
+        {{range .Added}}
           <li>
-            <span class="label label-{{if gt .Score 0}}success{{else}}danger{{end}}">
+            <span class="label label-success">
               <span class="glyphicon glyphicon-tag" aria-hidden="true"></span>
-              {{.Name}}
+              {{.}}
+            </span>
+          </li>
+        {{end}}
+        {{range .Removed}}
+          <li>
+            <span class="label label-danger">
+              <span class="glyphicon glyphicon-tag" aria-hidden="true"></span>
+              {{.}}
             </span>
           </li>
         {{end}}
