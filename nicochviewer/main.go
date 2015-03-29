@@ -51,68 +51,6 @@ func getDB(c web.C) *modl.DbMap {
 	return nil
 }
 
-func addDateTime(t time.Time, years int, months int, days int, hours int, mins int, secs int, nsecs int) time.Time {
-	year, month, day := t.Date()
-	hour, min, sec := t.Clock()
-	return time.Date(year+years, month+time.Month(months), day+days, hour+hours, min+mins, sec+secs, t.Nanosecond()+nsecs, t.Location())
-}
-
-func LogHourly(dbm *modl.DbMap, videoID string, o time.Time) ([]*db.Log, error) {
-	var Logs []db.Log
-	err := dbm.Select(&Logs, "SELECT * FROM log WHERE (videoid = ?)AND(datetime(?, '-24 hours') <= at)AND(at < ?) GROUP BY strftime('%Y%m%d%H', at) ORDER BY at ASC", videoID, o, o)
-	if err != nil {
-		return nil, err
-	}
-	rLogs := make([]*db.Log, 24)
-	var l, r time.Time
-	r = addDateTime(o, 0, 0, 0, -24, 0, 0, 0)
-	for i, j := 0, 0; i < len(rLogs); i++ {
-		l = r
-		r = addDateTime(o, 0, 0, 0, -24+i+1, 0, 0, 0)
-		if j >= len(Logs) {
-			continue
-		}
-		if Logs[j].At.After(r) {
-			continue
-		}
-		if Logs[j].At.Before(l) {
-			j++
-			continue
-		}
-		rLogs[i] = &Logs[j]
-		j++
-	}
-	return rLogs, nil
-}
-
-func LogDaily(x modl.SqlExecutor, videoID int64, o time.Time) ([]*db.Log, error) {
-	var Logs []db.Log
-	err := x.Select(&Logs, "SELECT * FROM log WHERE (videoid = ?)AND(datetime(?, '-30 days') <= at)AND(at < ?) GROUP BY strftime('%Y%m%d', at) ORDER BY at ASC", videoID, o, o)
-	if err != nil {
-		return nil, err
-	}
-	rLogs := make([]*db.Log, 30)
-	var l, r time.Time
-	r = addDateTime(o, 0, 0, -30, 0, 0, 0, 0)
-	for i, j := 0, 0; i < len(rLogs); i++ {
-		l = r
-		r = addDateTime(o, 0, 0, -30+i+1, 0, 0, 0, 0)
-		if j >= len(Logs) {
-			continue
-		}
-		if Logs[j].At.After(r) {
-			continue
-		}
-		if Logs[j].At.Before(l) {
-			j++
-			continue
-		}
-		rLogs[i] = &Logs[j]
-		j++
-	}
-	return rLogs, nil
-}
-
 func Video(c web.C, w http.ResponseWriter, r *http.Request) {
 	dbm := getDB(c)
 	var vars struct {
@@ -128,7 +66,7 @@ func Video(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
-	vars.Logs, err = LogDaily(dbm, vars.Video.ID, now)
+	vars.Logs, err = db.LogDaily(dbm, vars.Video.ID, now.AddDate(0, -1, 0), now)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
