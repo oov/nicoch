@@ -104,11 +104,12 @@ ORDER BY at ASC
 			continue
 		}
 		if logs[i].At.After(r) {
+			// not found
 			rLogs = append(rLogs, &Log{At: addDateTime(l, 0, 0, 0, 0, 30, 0, 0)})
 			i--
-			continue
+		} else {
+			rLogs = append(rLogs, &logs[i])
 		}
-		rLogs = append(rLogs, &logs[i])
 		l, r = l.AddDate(0, 0, 1), r.AddDate(0, 0, 1)
 	}
 	return rLogs, nil
